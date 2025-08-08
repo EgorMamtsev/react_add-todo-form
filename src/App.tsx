@@ -4,6 +4,7 @@ import { TodoList } from './components/TodoList';
 import usersFromServer from './api/users';
 import todosFromServer from './api/todos';
 import React, { useState } from 'react';
+import { User, Todo } from './types/types';
 
 export const App = () => {
   const [title, setTitle] = useState('');
@@ -15,7 +16,15 @@ export const App = () => {
   const [hasTitleError, setHasTitleError] = useState(false);
   const [hasUserError, setHasUserError] = useState(false);
 
-  const handleTittleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const todosWithUsers = todos
+    .map(todo => {
+      const user = users.find(u => u.id === todo.userId);
+
+      return user ? { ...todo, user } : null;
+    })
+    .filter((todo): todo is Todo & { user: User } => todo !== null);
+
+  const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(event.target.value);
     setHasTitleError(false);
   };
@@ -36,9 +45,9 @@ export const App = () => {
     }
 
     const maxId = todos.length ? Math.max(...todos.map(todo => todo.id)) : 0;
-    const user = users.find(u => u.id === userId);
+    const currentUser = users.find(user => user.id === userId);
 
-    if (!user) {
+    if (!currentUser) {
       return;
     }
 
@@ -47,12 +56,6 @@ export const App = () => {
       title,
       userId,
       completed: false,
-      user: {
-        id: user.id,
-        name: user.name,
-        username: user.username,
-        email: user.email,
-      },
     };
 
     setTodos(prevTodos => [newTodo, ...prevTodos]);
@@ -68,10 +71,11 @@ export const App = () => {
         <div className="field">
           <label htmlFor="titleInput">Title</label>
           <input
+            id="titleInput"
             type="text"
             data-cy="titleInput"
             value={title}
-            onChange={handleTittleChange}
+            onChange={handleTitleChange}
           />
           {hasTitleError && <span className="error">Please enter a title</span>}
         </div>
@@ -79,6 +83,7 @@ export const App = () => {
         <div className="field">
           <label htmlFor="userInput">User</label>
           <select
+            id="userInput"
             data-cy="userSelect"
             value={userId}
             required
@@ -100,7 +105,7 @@ export const App = () => {
           Add
         </button>
       </form>
-      <TodoList todos={todos} users={users} />
+      <TodoList todos={todosWithUsers} />
     </div>
   );
 };
